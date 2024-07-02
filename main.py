@@ -3,7 +3,12 @@ from Modules.Item import Item
 from Modules.Character import Player, Sentry
 
 def main():
-    welcome()
+    turns = 0
+    achievements = {
+        "Pacifist": True, # Don't use any EMPs
+        "In the dark": True, # Don't use any torches
+        "Speedrunner": True # Finish the game in 10 turns
+    }
     rooms = {
         "1": Room("Room 1", "1", "You find a torch on the ground.", [Item("Torch", "Illuminates next rooms.", 2)], ["2", "5", "8"]),
         "2": Room("Room 2", "2", "You hear a Sentry in the next room.", [], ["1", "3", "10"]),
@@ -12,12 +17,12 @@ def main():
         "5": Room("Room 5", "5", "You find an EMP on the ground.", [Item("EMP", "Eliminates Sentries", 1)], ["1", "4", "6"]),
         "6": Room("Room 6", "6", "You hear a Sentry in the next room.", [], ["5", "7", "15"]),
         "7": Room("Room 7", "7", "You find a bottle of booze on the ground.", [Item("Booze", "Makes you drunk", 5)], ["6", "8", "17"]),
-        "8": Room("Room 8", "8", "You hear a Sentry in the next room.", [], ["1", "7", "9"]),
+        "8": Room("Room 8", "8", "You hear a Sentry in t//he next room.", [], ["1", "7", "9"]),
         "9": Room("Room 9", "9", "A Sentry spots you.", [Sentry()], ["8", "10", "18"]),
         "10": Room("Room 10", "10", "You hear a Sentry in the next room.", [], ["2", "9", "11"]),
         "11": Room("Room 11", "11", "You find an EMP on the ground.", [Item("EMP", "Eliminates Sentries", 1)], ["10", "12", "19"]),
         "12": Room("Room 12", "12", "You hear a Sentry in the next room.", [], ["3", "11", "13"]),
-        "13": Room("Room 13", "13", "You find a bottle of booze on the ground.", ["booze"], ["12", "14", "20"]),
+        "13": Room("Room 13", "13", "You find a bottle of booze on the ground.", [Item("Booze", "Makes you drunk", 5)], ["12", "14", "20"]),
         "14": Room("Room 14", "14", "You hear a Sentry in the next room.", [], ["4", "13", "15"]),
         "15": Room("Room 15", "15", "A Sentry spots you.", [Sentry()], ["6", "14", "16"]),
         "16": Room("Room 16", "16", "You hear a Sentry in the next room.", [], ["15", "17", "20"]),
@@ -26,6 +31,7 @@ def main():
         "19": Room("Room 19", "19", "You find a torch on the ground.", [Item("Torch", "Illuminates next rooms.", 2)], ["11", "18", "20"]),
         "20": Room("Room 20", "20", "You find the exit!", [], ["13", "16", "19"])
     }
+    
     player = Player("Player", 5, [], rooms["1"])
     while True:
         print(f"\nSTATUS\nYou are in room {player.position.id}.")
@@ -47,15 +53,33 @@ def main():
                 player.position.set_description("There is nothing more in this room.")
             elif isinstance(item, Sentry):
                 print("Engaging Combat!")
-                pass # Do later, add booze function
+                if player.get_boozed():
+                    print("You are drunk and manage to talk your way out of the situation. Lucky You.")
+                else:
+                    flag = False
+                    for thing in player.get_inventory():
+                        if thing.get_name() == "EMP":
+                            achievements["Pacifist"] = False
+                            print("You use the EMP and disable the Sentry. You can now move freely.")
+                            player.set_enemies_to_kill()
+                            player.inventory.remove(thing)
+                            player.position.items.remove(item)
+                            flag = True
+                            break
+                    if not flag:
+                        game_over("lose", turns, achievements)
         else:
             print("There is nothing in this room.")
         if player.position.id == "20":
-            print("Congratulations! You've found the exit!")
-            break
+            if player.get_enemies_to_kill() > 0:
+                print("You need to kill all the Sentries before you can exit the base.")
+                continue
+            else:
+                game_over("win", turns, achievements)
+                break
         print(f"You can go to: {' '.join(player.position.get_links())}")
         while True:
-            move = input("What would you like to do? [move, use]")
+            move = input("What would you like to do? [move, use] ")
             if move == "move":
                 i = input("Where would you like to go? ")
                 if i in player.position.get_links():
@@ -68,31 +92,31 @@ def main():
                     print("You have no items to use.")
                     break
                 else:
-                    i = int(input("Which item number would you like to use? "))
+                    try:
+                        i = int(input("Which item number would you like to use? "))
+                    except ValueError:
+                        print("Invalid input.")
                     if i < len(player.get_inventory()):
-                        if item == "Torch":
+                        if player.inventory[i].get_name() == "Torch":
+                            achievements["In the dark"] = False
                             flag = False
-                            for i in rooms[player.position.id].get_links():
-                                if isinstance(rooms[i].get_items()[0], Sentry):
-                                    print(f"A Sentry is in room {i}.")
-                                    flag = True
+                            for z in rooms[player.position.id].get_links():
+                                if rooms[z].get_items() != []:
+                                    if type(rooms[z].get_items()) == Sentry:
+                                        print(f"A Sentry is in room {z}.")
+                                        flag = True
                             if not flag:
                                 print("No Sentries found.")
                             player.inventory[i].uses -= 1
                             if player.inventory[i].uses == 0:
-                                player.inventory.pop(i)
+                                player.inventory.remove(i)
                         elif item == "Booze":
                             print("You feel woozy...")
                             player.set_boozed(5)
                             player.inventory[i].uses -= 1
                             if player.inventory[i].uses == 0:
-                                player.inventory.pop(i)
-
-                                
+                                player.inventory.pop(i)     
                         break
-
-        
-    
 
 def welcome():
     print("Welcome to Agent's Quest - an interactive adaptation of 'Hunt the Wumpus'!")
@@ -109,6 +133,20 @@ def welcome():
         print("")
     print("Good luck, Agent!\n")
 
+def game_over(status, turns, achievements):
+    if status == "win":
+        print("Congratulations! You've found the exit!")
+        print(f"You made it out in {turns} turns.")
+        print("Achievements:")
+        for key, value in achievements.items():
+            if value:
+                print(key)
+    else:
+        print("You've died. Game Over.")
+    if input("Would you like to play again? [y/n] ") == "y":
+        print("Starting new game...")
+        main()
 
 if __name__ == "__main__":
+    welcome()
     main()

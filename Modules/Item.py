@@ -7,3 +7,6 @@ class Item():
     
     def get_name(self):
         return self.name
+    
+    def get_uses(self):
+        return self.uses
