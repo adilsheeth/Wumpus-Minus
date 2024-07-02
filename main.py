@@ -1,6 +1,7 @@
 from Modules.Room import Room
 from Modules.Item import Item
 from Modules.Character import Player, Sentry
+import time, os
 
 def main():
     turns = 0
@@ -12,19 +13,19 @@ def main():
     rooms = {
         "1": Room("Room 1", "1", "You find a torch on the ground.", [Item("Torch", "Illuminates next rooms.", 2)], ["2", "5", "8"]),
         "2": Room("Room 2", "2", "You hear a Sentry in the next room.", [], ["1", "3", "10"]),
-        "3": Room("Room 3", "3", "A Sentry spots you.", [Sentry()], ["2", "4", "12"]),
+        "3": Room("Room 3", "3", "A Sentry spots you.", [Sentry("INTRUDER!!!")], ["2", "4", "12"]),
         "4": Room("Room 4", "4", "You hear a Sentry in the next room.", [], ["3", "5", "14"]),
         "5": Room("Room 5", "5", "You find an EMP on the ground.", [Item("EMP", "Eliminates Sentries", 1)], ["1", "4", "6"]),
         "6": Room("Room 6", "6", "You hear a Sentry in the next room.", [], ["5", "7", "15"]),
         "7": Room("Room 7", "7", "You find a bottle of booze on the ground.", [Item("Booze", "Makes you drunk", 5)], ["6", "8", "17"]),
-        "8": Room("Room 8", "8", "You hear a Sentry in t//he next room.", [], ["1", "7", "9"]),
-        "9": Room("Room 9", "9", "A Sentry spots you.", [Sentry()], ["8", "10", "18"]),
+        "8": Room("Room 8", "8", "You hear a Sentry in the next room.", [], ["1", "7", "9"]),
+        "9": Room("Room 9", "9", "A Sentry spots you.", [Sentry("I smell a rat!")], ["8", "10", "18"]),
         "10": Room("Room 10", "10", "You hear a Sentry in the next room.", [], ["2", "9", "11"]),
         "11": Room("Room 11", "11", "You find an EMP on the ground.", [Item("EMP", "Eliminates Sentries", 1)], ["10", "12", "19"]),
         "12": Room("Room 12", "12", "You hear a Sentry in the next room.", [], ["3", "11", "13"]),
         "13": Room("Room 13", "13", "You find a bottle of booze on the ground.", [Item("Booze", "Makes you drunk", 5)], ["12", "14", "20"]),
         "14": Room("Room 14", "14", "You hear a Sentry in the next room.", [], ["4", "13", "15"]),
-        "15": Room("Room 15", "15", "A Sentry spots you.", [Sentry()], ["6", "14", "16"]),
+        "15": Room("Room 15", "15", "A Sentry spots you.", [Sentry("My spidey senses tingle...")], ["6", "14", "16"]),
         "16": Room("Room 16", "16", "You hear a Sentry in the next room.", [], ["15", "17", "20"]),
         "17": Room("Room 17", "17", "You find an EMP on the ground.", [Item("EMP", "Eliminates Sentries", 1)], ["7", "16", "18"]),
         "18": Room("Room 18", "18", "You hear a Sentry in the next room.", [], ["9", "17", "19"]),
@@ -34,16 +35,12 @@ def main():
     
     player = Player("Player", 5, [], rooms["1"])
     while True:
-        print(f"\nSTATUS\nYou are in room {player.position.id}.")
-        if player.get_boozed() > 0:
-            print(f"You are drunk for {player.get_boozed()} more rooms.")
-            player.set_boozed(player.get_boozed()-1)
-        if player.get_inventory() == []:
-            print("You have no items in your inventory.")
-        else:
-            print("You have: ")
-            for index in range(len(player.get_inventory())):
-                print(f"[{index}] {player.get_inventory()[index].name} - ({player.get_inventory()[index].uses} uses)")
+        if os.name == "nt":
+            os.system("cls")
+        print(f"STATUS\nYou are in room {player.position.id}.")
+        if player.get_boozed():
+            print(f"You are drunk for {player.get_boozed_value()} more turns.")
+            player.set_boozed(player.get_boozed_value()-1)
         print("\n"+player.position.get_description())
         item = player.get_position().get_items()
         if item != []:
@@ -52,6 +49,7 @@ def main():
                 player.position.items.remove(item)
                 player.position.set_description("There is nothing more in this room.")
             elif isinstance(item, Sentry):
+                item.speak()
                 print("Engaging Combat!")
                 if player.get_boozed():
                     print("You are drunk and manage to talk your way out of the situation. Lucky You.")
@@ -68,8 +66,14 @@ def main():
                             break
                     if not flag:
                         game_over("lose", turns, achievements)
+                        break
+        if player.get_inventory() == []:
+            print("You have no items in your inventory.")
         else:
-            print("There is nothing in this room.")
+            print("\nYou have: ")
+            for index in range(len(player.get_inventory())):
+                print(f"[{index}] {player.get_inventory()[index].name} - ({player.get_inventory()[index].uses} uses)")
+            print("")
         if player.position.id == "20":
             if player.get_enemies_to_kill() > 0:
                 print("You need to kill all the Sentries before you can exit the base.")
@@ -104,19 +108,24 @@ def main():
                                 if rooms[z].get_items() != []:
                                     if type(rooms[z].get_items()) == Sentry:
                                         print(f"A Sentry is in room {z}.")
+                                        time.sleep(3)
                                         flag = True
                             if not flag:
                                 print("No Sentries found.")
                             player.inventory[i].uses -= 1
                             if player.inventory[i].uses == 0:
-                                player.inventory.remove(i)
-                        elif item == "Booze":
+                                player.inventory.pop(i)
+                        elif player.inventory[i].get_name() == "Booze":
                             print("You feel woozy...")
+                            time.sleep(2)
                             player.set_boozed(5)
-                            player.inventory[i].uses -= 1
-                            if player.inventory[i].uses == 0:
-                                player.inventory.pop(i)     
+                            player.inventory.pop(i)     
+                        elif player.inventory[i].get_name() == "EMP":
+                            print("You can't use that now!")
+                            time.sleep(2)
                         break
+                    else:
+                        print("Invalid item number.")
 
 def welcome():
     print("Welcome to Agent's Quest - an interactive adaptation of 'Hunt the Wumpus'!")

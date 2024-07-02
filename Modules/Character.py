@@ -1,7 +1,10 @@
 
 class Sentry():
-    def __init__(self):
-        pass
+    def __init__(self, dialogue):
+        self.dialogue = dialogue
+    
+    def speak(self):
+        print("The sentry says: ", self.dialogue)
 
 
 class Player():
@@ -27,6 +30,9 @@ class Player():
     
     def get_boozed(self):
         return self.boozed > 0
+    
+    def get_boozed_value(self):
+        return self.boozed
     
     def get_inventory(self):
         return self.inventory
