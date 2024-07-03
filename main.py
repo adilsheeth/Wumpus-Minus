@@ -38,6 +38,7 @@ def main():
         if os.name == "nt":
             os.system("cls")
         print(f"STATUS\nYou are in room {player.position.id}.")
+        turns += 1
         if player.get_boozed():
             print(f"You are drunk for {player.get_boozed_value()} more turns.")
             player.set_boozed(player.get_boozed_value()-1)
@@ -53,6 +54,7 @@ def main():
                 print("Engaging Combat!")
                 if player.get_boozed():
                     print("You are drunk and manage to talk your way out of the situation. Lucky You.")
+                    player.set_enemies_to_kill()
                 else:
                     flag = False
                     for thing in player.get_inventory():
@@ -77,6 +79,8 @@ def main():
         if player.position.id == "20":
             if player.get_enemies_to_kill() > 0:
                 print("You need to kill all the Sentries before you can exit the base.")
+                time.sleep(3)
+                player.move(rooms["16"])
                 continue
             else:
                 game_over("win", turns, achievements)
