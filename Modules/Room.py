@@ -2,7 +2,7 @@
 class Room:
     def __init__(self, name, id, description, items, links):
         self.name = name
-        self.description = description
+        self.description = description 
         self.items = items
         self.links = links
         self.id = id

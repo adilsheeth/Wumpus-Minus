@@ -1,18 +1,23 @@
+class Character():
+    def __init__(self, name, health, position):
+        self.name = name
+        self.health = health
+        self.position = position
 
-class Sentry():
+
+class Sentry(Character):
     def __init__(self, dialogue):
+        super().__init__("Sentry", 100, None)
         self.dialogue = dialogue
     
     def speak(self):
         print("The sentry says: ", self.dialogue)
 
 
-class Player():
+class Player(Character):
     def __init__(self, name, health, inventory, position):
-        self.name = name
-        self.health = health
+        super().__init__(name, health, position)
         self.inventory = inventory
-        self.position = position
         self.boozed = 0
         self.enemies_to_kill = 3
     
